@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LowKeyboard</string>
+    <string name="enable">1. Включить клавиатуру</string>
+    <string name="choose">2. Выбрать клавиатуру</string>
+    <string name="langs">Языки в цикле переключения:</string>
+    <string name="digits_sym">Цифровой ряд только на символьной раскладке</string>
+    <string name="key_height">Высота клавиш: %1$d dp</string>
+    <string name="reset_langs">По умолчанию: английский + язык системы</string>
+    <string name="subtype">English</string>
+    <string name="theme">Тема:</string>
+    <string name="hide_icon">Скрыть значок приложения на рабочем столе</string>
+    <string name="hide_icon_hint">Настройки останутся доступны в системе: Настройки → Язык и ввод → LowKeyboard.</string>
+</resources>

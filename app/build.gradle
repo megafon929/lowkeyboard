@@ -1,0 +1,48 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace 'com.m929.lowkeyboard'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.m929.lowkeyboard'
+        minSdk 15
+        targetSdk 25
+        versionCode 1
+        versionName '1.0'
+        // Оставляем только нужные языковые ресурсы
+        resConfigs 'en', 'ru'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true          // R8
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Подписываем отладочным ключом, чтобы APK можно было сразу установить.
+            // Для публикации замените на свой ключ.
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+        // targetSdk 25 задан ТЗ; приложение не для Google Play
+        disable 'ExpiredTargetSdkVersion'
+    }
+}
+
+// Зависимостей нет намеренно (ТЗ п. 2.2).
+dependencies {
+}
+
+// JDK 21 предупреждает, что source/target 8 устарели; на результат это не влияет.
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs << '-Xlint:-options'
+}
