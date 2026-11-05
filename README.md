@@ -108,3 +108,14 @@ Add an entry to `Theme.ALL` and a name to `Theme.NAMES` in `Theme.java`.
 
 Preferences are kept in the `kb` SharedPreferences file: `mask2` (enabled languages), `lang2`
 (current language), `theme`, `keyH` (key height, dp), `digSym` (number row on symbols only).
+
+## Credits and AI assistance
+
+This project was created with the help of **Claude**, an AI assistant by Anthropic.
+
+- **Claude:** wrote the source code, resources, build configuration, helper scripts and this documentation
+  from the author's requirements, and revised them step by step according to the author's feedback.
+- **The author:** wrote the specification, supplied the icon artwork (SVG), built the app, tested it on
+  a real Android 4.0.4 device and decided what to change.
+
+The code was not compiled or run by the assistant: builds and device testing were done by the author.
