@@ -15,6 +15,7 @@ import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
+import android.view.SoundEffectConstants;
 import android.view.View;
 import android.widget.PopupWindow;
 
@@ -71,9 +72,13 @@ public class KbView extends View {
     static final int ENTER_RETURN = 0, ENTER_SEARCH = 1, ENTER_NEXT = 2, ENTER_DONE = 3, ENTER_SEND = 4;
     private int enterKind;     // что нарисовать на клавише Enter
     private boolean digitsSymOnly; // цифровой ряд только на символьной раскладке
-    private int rowCount = 5;
+    private boolean sound = true;  // звук нажатий: системный клик, настраивается в приложении
     private float rowH;
     private int symPage;       // страница символов (0 или 1) в компактном режиме
+    private boolean rtl;       // письмо справа налево: ряды букв зеркалятся
+
+    /** Пределы высоты клавиши в dp (те же значения использует экран настроек). */
+    static final int MIN_KEY_H = 30, MAX_KEY_H = 60;
 
     // Компактные символы: цифровой ряд + 2 ряда на страницу, вместе с нижним рядом - те же 4 ряда, что и у букв.
     private static final String[] SYM_A = {"@#$%&-+()/", "~`|^=[]{}\\"};
@@ -155,13 +160,19 @@ public class KbView extends View {
             digitsSymOnly = ds;
             requestLayout();
         }
-        float kh = prefs.getInt("keyH", 42) * dp;
+        sound = prefs.getBoolean("sound", true);
+        int khPref = prefs.getInt("keyH", 42);
+        khPref = Math.max(MIN_KEY_H, Math.min(MAX_KEY_H, khPref)); // испорченное значение не ломает клавиатуру
+        float kh = khPref * dp;
         if (kh != keyH) {
             keyH = kh;
             requestLayout();
         }
         int l = prefs.getInt("lang2", Layouts.defaultLang());
-        if (l < 0 || l >= Layouts.COUNT || (mask & (1 << l)) == 0) l = nextEnabled(l);
+        if (l < 0 || l >= Layouts.COUNT || (mask & (1 << l)) == 0) {
+            l = nextEnabled(l);
+            prefs.edit().putInt("lang2", l).apply(); // исправленный язык сразу запоминаем
+        }
         if (l != lang) {
             lang = l;
         }
@@ -230,7 +241,7 @@ public class KbView extends View {
         boolean compact = sym && digitsSymOnly;
         int r0 = digits ? 1 : 0;
         int total = digitsSymOnly ? 4 : 5;
-        rowCount = total;
+        rtl = !sym && Layouts.RTL[lang]; // символьные ряды общие для всех языков, их не зеркалим
         float w = getWidth();
         if (w <= 0 || getHeight() <= 0) {
             invalidate();
@@ -239,7 +250,7 @@ public class KbView extends View {
         rowH = keyH;                                    // размер клавиш не зависит от раскладки
         String[] rows = sym ? Layouts.SYMBOLS : Layouts.LETTERS[lang];
 
-        if (digits) addRow(Layouts.DIGITS, 0, 0, 0, 0, 0);
+        if (digits) addRow(Layouts.DIGITS, 0, 0, 0, 0, 0, false); // цифры всегда слева направо
         int first = keys.size();
         if (compact) {
             addRow(SYM_A[symPage], 1, 0, 0, 0, 0);
@@ -294,6 +305,11 @@ public class KbView extends View {
     }
 
     private void addRow(String chars, int row, float lw, int lcode, float rw, int rcode) {
+        addRow(chars, row, lw, lcode, rw, rcode, rtl);
+    }
+
+    /** Ряд клавиш; mirror = true раскладывает символы справа налево (RTL-письменности). */
+    private void addRow(String chars, int row, float lw, int lcode, float rw, int rcode, boolean mirror) {
         int n = chars.length();
         float unit = getWidth() / (lw + n + rw);
         float x = 0;
@@ -302,7 +318,8 @@ public class KbView extends View {
             x += lw * unit;
         }
         for (int i = 0; i < n; i++) {
-            String s = chars.substring(i, i + 1);
+            int idx = mirror ? n - 1 - i : i; // при RTL первый символ строки - у правого края
+            String s = chars.substring(idx, idx + 1);
             if (shift > 0 && mode == 0) s = cased(s, true);
             addKey(s, 0, x, row, unit);
             x += unit;
@@ -451,7 +468,7 @@ public class KbView extends View {
                         c.drawPath(path, line);
                         break;
                     case ENTER_SEND:
-                        drawLabel(c, "Send", cx, cy, 0.3f);
+                        drawFittedLabel(c, getContext().getString(R.string.enter_send), cx, cy, 0.3f);
                         break;
                     default: // перевод строки
                         path.reset();
@@ -489,6 +506,16 @@ public class KbView extends View {
     private void drawLabel(Canvas c, String s, float cx, float cy, float size) {
         txt.setColor(curText);
         txt.setTextSize(keyH * size);
+        c.drawText(s, cx, cy - (txt.ascent() + txt.descent()) / 2, txt);
+    }
+
+    /** Подпись, которая ужимается по ширине клавиши: переводы бывают длиннее оригинала. */
+    private void drawFittedLabel(Canvas c, String s, float cx, float cy, float size) {
+        txt.setColor(curText);
+        txt.setTextSize(keyH * size);
+        float avail = rect.width() - 6 * dp;
+        float tw = txt.measureText(s);
+        if (tw > avail && tw > 0) txt.setTextSize(txt.getTextSize() * avail / tw);
         c.drawText(s, cx, cy - (txt.ascent() + txt.descent()) / 2, txt);
     }
 
@@ -552,6 +579,9 @@ public class KbView extends View {
         pressed = k;
         if (k != null) {
             performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            // Системный звук клавиши: берётся из настроек звуков устройства и уважает
+            // системный переключатель «звуки касаний».
+            if (sound) playSoundEffect(SoundEffectConstants.CLICK);
             if (k.code == DEL) {
                 handler.postDelayed(longPress, 400);
             } else if (k.code == SPACE || (k.code == 0 && (k.hint != null || Layouts.alts(lang, cased(k.text, false)) != null))) {
@@ -586,7 +616,7 @@ public class KbView extends View {
             alts = a;
             altSel = 0;
             float cw = Math.max(k.w, keyH * 0.9f);
-            float w = cw * a.length();
+            float w = Math.min(getWidth(), cw * a.length()); // панель не должна быть шире экрана
             float left = k.x + k.w / 2 - w / 2;
             left = Math.max(0, Math.min(getWidth() - w, left));
             altRect.set(left, 0, left + w, 0); // для выбора по x нужны только левый край и ширина
@@ -638,6 +668,8 @@ public class KbView extends View {
 
     @Override
     protected void onDetachedFromWindow() {
+        cancelTimers(); // иначе повтор удаления продолжится после скрытия клавиатуры
+        pressed = null;
         hideAlts();
         super.onDetachedFromWindow();
     }
@@ -658,7 +690,7 @@ public class KbView extends View {
             c.drawRoundRect(cell, radius, radius, fill);
             if (alts == null) return;
             float cw = w / alts.length();
-            txt.setTextSize(keyH * 0.5f);
+            txt.setTextSize(Math.min(keyH * 0.5f, cw * 0.7f)); // в узких ячейках шрифт мельче
             for (int i = 0; i < alts.length(); i++) {
                 float x0 = i * cw;
                 if (i == altSel) {

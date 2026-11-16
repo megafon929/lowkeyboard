@@ -46,6 +46,9 @@ final class Layouts {
     /** Scripts without letter case (the shift key is hidden). */
     static final boolean[] CASED = {true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, false, false, false};
 
+    /** Right-to-left scripts: letter rows are mirrored. AR, HE, FA. */
+    static final boolean[] RTL = {false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true, true};
+
     static final String DIGITS = "1234567890";
 
     /** Three letter rows per language. */

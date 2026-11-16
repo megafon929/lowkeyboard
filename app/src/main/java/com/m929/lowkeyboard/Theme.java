@@ -5,7 +5,7 @@ package com.m929.lowkeyboard;
  * поэтому темы почти не увеличивают размер APK.
  */
 final class Theme {
-    static final String[] NAMES = {"Holo", "Material Light", "Material Dark", "MIUI 5", "Flyme"};
+    static final String[] NAMES = {"Holo", "Material Light", "Material Dark", "MIUI 5", "Flyme", "TouchWiz"};
     static final int COUNT = NAMES.length;
 
     private static final Theme[] ALL = {
@@ -69,6 +69,19 @@ final class Theme {
                     0xFF198CFF,
                     0xFF2B2B2B, 0xFF9AA0A6, 0xFF9AA0A6,
                     0xFFFFFFFF, 0xFFFFFFFF),
+            // TouchWiz (Samsung, Android 4.x-5.x): серый фон, светло-серые буквенные клавиши,
+            // пробел и служебные клавиши темнее, чёрный текст
+            new Theme(false, true, 5, 3, 2,
+                    0xFF747678, 0xFF747678,  // фон
+                    0xFFE1E1E1, 0xFFC6C5C8,  // буквенные клавиши: тело, кромка
+                    0xFFA8A7AA, 0xFF939295,  // служебные
+                    0xFFA8A7AA, 0xFF939295,  // пробел
+                    0xFFA8A7AA, 0xFF939295,  // клавиша действия (Enter)
+                    0xFFC7C6C9, 0xFFA8A7AA,  // нажатая
+                    0xFFE1E1E1,              // панель вариантов
+                    0xFF747678,              // акцент
+                    0xFF000000, 0xFF808080, 0xFF3A3A3A, // текст, подсказки, подпись на пробеле
+                    0xFF000000, 0xFFFFFFFF), // текст на клавише действия, на акценте
     };
 
     final boolean bold;        // жирный шрифт подписей

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="@string/cat_keyboard">
+
+        <Preference
+            android:key="enable"
+            android:persistent="false"
+            android:title="@string/enable" />
+
+        <Preference
+            android:key="choose"
+            android:persistent="false"
+            android:title="@string/choose" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="cat_theme"
+        android:title="@string/cat_appearance">
+
+        <!-- Чекбоксы тем добавляются из Theme.NAMES, ползунок высоты идёт после них. -->
+        <com.m929.lowkeyboard.KeyHeightPreference
+            android:key="keyH"
+            android:order="100"
+            android:persistent="false" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/cat_input">
+
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="sound"
+            android:summary="@string/sound_summary"
+            android:title="@string/sound" />
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="digSym"
+            android:title="@string/digits_sym" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="cat_langs"
+        android:title="@string/langs">
+
+        <!-- Языки добавляются из Layouts.TITLES, сброс - последним пунктом. -->
+        <Preference
+            android:key="reset_langs"
+            android:persistent="false"
+            android:title="@string/reset_langs" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/cat_other">
+
+        <CheckBoxPreference
+            android:key="hide_icon"
+            android:persistent="false"
+            android:summary="@string/hide_icon_hint"
+            android:title="@string/hide_icon" />
+    </PreferenceCategory>
+</PreferenceScreen>

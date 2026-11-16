@@ -1,218 +1,143 @@
 package com.m929.lowkeyboard;
 
-import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.preference.CheckBoxPreference;
+import android.preference.Preference;
+import android.preference.PreferenceActivity;
+import android.preference.PreferenceCategory;
 import android.provider.Settings;
-import android.view.Gravity;
-import android.view.View;
-import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
-import android.widget.LinearLayout;
-import android.widget.SeekBar;
-import android.widget.Spinner;
-import android.widget.ScrollView;
-import android.widget.TextView;
 
-/** Минимальный экран: включить клавиатуру, выбрать её и отметить языки для цикла глобуса. */
-public class SettingsActivity extends Activity {
-
-    private static final int MIN_KEY_H = 30, MAX_KEY_H = 60; // dp
+/**
+ * Экран настроек на стандартном PreferenceActivity: пункты разложены по категориям,
+ * виджеты системные. Темы - чекбоксы (включена всегда ровно одна), языки - тоже чекбоксы.
+ */
+@SuppressWarnings("deprecation")
+public class SettingsActivity extends PreferenceActivity {
 
     private SharedPreferences prefs;
-    private boolean updating;   // игнорировать галочки, пока список обновляется программно
-    private final CheckBox[] boxes = new CheckBox[Layouts.COUNT];
+    private boolean updating;   // галочки меняются программно - обработчики не должны на это реагировать
+    private final CheckBoxPreference[] themes = new CheckBoxPreference[Theme.COUNT];
+    private final CheckBoxPreference[] langs = new CheckBoxPreference[Layouts.COUNT];
 
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
         prefs = getSharedPreferences("kb", Context.MODE_PRIVATE);
-        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        getPreferenceManager().setSharedPreferencesName("kb"); // те же prefs, что читает клавиатура
+        addPreferencesFromResource(R.xml.settings);
 
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(pad, pad, pad, pad);
-
-        Button enable = new Button(this);
-        enable.setText(R.string.enable);
-        enable.setOnClickListener(new View.OnClickListener() {
+        findPreference("enable").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             @Override
-            public void onClick(View v) {
+            public boolean onPreferenceClick(Preference p) {
                 startActivity(new Intent(Settings.ACTION_INPUT_METHOD_SETTINGS));
+                return true;
             }
         });
-        root.addView(enable);
 
-        Button choose = new Button(this);
-        choose.setText(R.string.choose);
-        choose.setOnClickListener(new View.OnClickListener() {
+        findPreference("choose").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             @Override
-            public void onClick(View v) {
+            public boolean onPreferenceClick(Preference p) {
                 InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
                 if (imm != null) imm.showInputMethodPicker();
+                return true;
             }
         });
-        root.addView(choose);
 
-        TextView themeLabel = new TextView(this);
-        themeLabel.setText(R.string.theme);
-        themeLabel.setPadding(0, pad, 0, 0);
-        root.addView(themeLabel);
-        Spinner themes = new Spinner(this);
-        final int itemH = (int) (56 * getResources().getDisplayMetrics().density); // крупные пункты
-        final int itemPad = pad;
-        ArrayAdapter<String> themeAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, Theme.NAMES) {
-            private View big(View v) {
-                TextView t = (TextView) v;
-                t.setTextSize(20);
-                t.setMinHeight(itemH);
-                t.setGravity(Gravity.CENTER_VERTICAL);
-                t.setPadding(itemPad, 0, itemPad, 0);
-                return t;
-            }
+        buildThemes();
+        buildLangs();
 
+        findPreference("reset_langs").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                return big(super.getView(position, convertView, parent));
-            }
-
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                return big(super.getDropDownView(position, convertView, parent));
-            }
-        };
-        themeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        themes.setAdapter(themeAdapter);
-        themes.setSelection(prefs.getInt("theme", 0));
-        themes.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View v, int pos, long id) {
-                prefs.edit().putInt("theme", pos).apply();
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-        root.addView(themes);
-
-        CheckBox dig = new CheckBox(this);
-        dig.setText(R.string.digits_sym);
-        dig.setChecked(prefs.getBoolean("digSym", false));
-        dig.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton cb, boolean checked) {
-                prefs.edit().putBoolean("digSym", checked).apply();
-            }
-        });
-        root.addView(dig);
-
-        final TextView hLabel = new TextView(this);
-        hLabel.setPadding(0, pad, 0, 0);
-        int kh = prefs.getInt("keyH", 42);
-        hLabel.setText(getString(R.string.key_height, kh));
-        root.addView(hLabel);
-        SeekBar hBar = new SeekBar(this);
-        hBar.setMax(MAX_KEY_H - MIN_KEY_H);
-        hBar.setProgress(Math.max(MIN_KEY_H, Math.min(MAX_KEY_H, kh)) - MIN_KEY_H);
-        hBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
-                int v = MIN_KEY_H + progress;
-                hLabel.setText(getString(R.string.key_height, v));
-                prefs.edit().putInt("keyH", v).apply();
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar bar) {
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar bar) {
-            }
-        });
-        root.addView(hBar);
-
-        TextView title = new TextView(this);
-        title.setText(R.string.langs);
-        title.setPadding(0, pad, 0, pad / 2);
-        root.addView(title);
-
-        int mask = prefs.getInt("mask2", Layouts.defaultMask());
-        CompoundButton.OnCheckedChangeListener l = new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton cb, boolean checked) {
-                if (!updating) save(cb);
-            }
-        };
-        for (int i = 0; i < Layouts.COUNT; i++) {
-            CheckBox cb = new CheckBox(this);
-            cb.setText(Layouts.TITLES[i]);
-            cb.setChecked((mask & (1 << i)) != 0);
-            cb.setOnCheckedChangeListener(l);
-            boxes[i] = cb;
-            root.addView(cb);
-        }
-
-        Button reset = new Button(this);
-        reset.setText(R.string.reset_langs);
-        reset.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+            public boolean onPreferenceClick(Preference p) {
                 prefs.edit().remove("mask2").remove("lang2").apply(); // снова английский + язык системы
                 int m = Layouts.defaultMask();
                 updating = true;
-                for (int i = 0; i < Layouts.COUNT; i++) boxes[i].setChecked((m & (1 << i)) != 0);
+                for (int i = 0; i < langs.length; i++) langs[i].setChecked((m & (1 << i)) != 0);
                 updating = false;
+                return true;
             }
         });
-        root.addView(reset);
 
-        // Скрыть значок на рабочем столе: выключаем псевдоним с LAUNCHER (сами настройки остаются доступными из «Язык и ввод»)
+        // Скрыть значок на рабочем столе: выключаем псевдоним с LAUNCHER (настройки остаются в «Язык и ввод»)
         final ComponentName alias = new ComponentName(this, "com.m929.lowkeyboard.LauncherAlias");
-        CheckBox hide = new CheckBox(this);
-        hide.setText(R.string.hide_icon);
+        CheckBoxPreference hide = (CheckBoxPreference) findPreference("hide_icon");
         hide.setChecked(getPackageManager().getComponentEnabledSetting(alias)
                 == PackageManager.COMPONENT_ENABLED_STATE_DISABLED);
-        hide.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        hide.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
             @Override
-            public void onCheckedChanged(CompoundButton cb, boolean checked) {
+            public boolean onPreferenceChange(Preference p, Object v) {
                 getPackageManager().setComponentEnabledSetting(alias,
-                        checked ? PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+                        Boolean.TRUE.equals(v) ? PackageManager.COMPONENT_ENABLED_STATE_DISABLED
                                 : PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                         PackageManager.DONT_KILL_APP);
+                return true;
             }
         });
-        hide.setPadding(hide.getPaddingLeft(), pad, hide.getPaddingRight(), 0);
-        root.addView(hide);
-        TextView hideHint = new TextView(this);
-        hideHint.setText(R.string.hide_icon_hint);
-        hideHint.setTextSize(13);
-        root.addView(hideHint);
-
-        ScrollView sv = new ScrollView(this);
-        sv.addView(root);
-        setContentView(sv);
     }
 
-    private void save(CompoundButton changed) {
-        int m = 0;
+    /** Темы: чекбоксы, включённой может быть только одна. */
+    private void buildThemes() {
+        PreferenceCategory cat = (PreferenceCategory) findPreference("cat_theme");
+        int cur = prefs.getInt("theme", 0);
+        if (cur < 0 || cur >= Theme.COUNT) cur = 0;
+        for (int i = 0; i < Theme.COUNT; i++) {
+            final int idx = i;
+            CheckBoxPreference cb = new CheckBoxPreference(this);
+            cb.setTitle(Theme.NAMES[i]);
+            cb.setOrder(i);              // чекбоксы идут до ползунка высоты (у него order 100)
+            cb.setPersistent(false);     // выбор темы пишем сами, в один ключ "theme"
+            cb.setChecked(i == cur);
+            cb.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                @Override
+                public boolean onPreferenceChange(Preference p, Object v) {
+                    if (updating || !Boolean.TRUE.equals(v)) return false; // снять текущую тему нельзя
+                    selectTheme(idx);
+                    return false; // галочки выставляем сами, состояние системы не применяем
+                }
+            });
+            themes[i] = cb;
+            cat.addPreference(cb);
+        }
+    }
+
+    private void selectTheme(int idx) {
+        prefs.edit().putInt("theme", idx).apply();
+        updating = true;
+        for (int i = 0; i < themes.length; i++) themes[i].setChecked(i == idx);
+        updating = false;
+    }
+
+    /** Языки в цикле глобуса; хотя бы один должен остаться включённым. */
+    private void buildLangs() {
+        PreferenceCategory cat = (PreferenceCategory) findPreference("cat_langs");
+        int mask = prefs.getInt("mask2", Layouts.defaultMask());
         for (int i = 0; i < Layouts.COUNT; i++) {
-            if (boxes[i].isChecked()) m |= 1 << i;
+            final int idx = i;
+            CheckBoxPreference cb = new CheckBoxPreference(this);
+            cb.setTitle(Layouts.TITLES[i]);
+            cb.setOrder(i);              // языки идут до кнопки сброса (у неё порядок по умолчанию)
+            cb.setPersistent(false);     // храним не отдельные флаги, а битовую маску "mask2"
+            cb.setChecked((mask & (1 << i)) != 0);
+            cb.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                @Override
+                public boolean onPreferenceChange(Preference p, Object v) {
+                    if (updating) return false;
+                    boolean checked = Boolean.TRUE.equals(v);
+                    int m = prefs.getInt("mask2", Layouts.defaultMask());
+                    m = checked ? (m | (1 << idx)) : (m & ~(1 << idx));
+                    if (m == 0) return false; // хотя бы один язык должен остаться
+                    prefs.edit().putInt("mask2", m).apply();
+                    return true;
+                }
+            });
+            langs[i] = cb;
+            cat.addPreference(cb);
         }
-        if (m == 0) { // хотя бы один язык должен остаться
-            changed.setChecked(true);
-            return;
-        }
-        prefs.edit().putInt("mask2", m).apply();
     }
 }

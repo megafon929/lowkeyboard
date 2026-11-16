@@ -48,6 +48,7 @@ def arr(items):
 
 
 tr_idx = [x[0] for x in L].index("TR")
+rtl_codes = ("AR", "HE", "FA")  # письмо справа налево: ряды букв зеркалятся
 src = []
 a = src.append
 a("package com.m929.lowkeyboard;")
@@ -73,6 +74,9 @@ a("    static final String[] TITLES = {\n            " + arr(j(x[1]) for x in L)
 a("")
 a("    /** Scripts without letter case (the shift key is hidden). */")
 a("    static final boolean[] CASED = {" + ", ".join('true' if x[5] else 'false' for x in L) + "};")
+a("")
+a("    /** Right-to-left scripts: letter rows are mirrored. AR, HE, FA. */")
+a("    static final boolean[] RTL = {" + ", ".join('true' if x[0] in rtl_codes else 'false' for x in L) + "};")
 a("")
 a("    static final String DIGITS = \"1234567890\";")
 a("")

@@ -46,6 +46,13 @@ public class KbService extends InputMethodService implements KbView.Listener {
     }
 
     @Override
+    public void onUpdateSelection(int oldSelStart, int oldSelEnd, int newSelStart, int newSelEnd,
+                                  int candidatesStart, int candidatesEnd) {
+        super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd);
+        autoCaps(); // курсор переехал - пересчитываем регистр
+    }
+
+    @Override
     public void onText(String s) {
         InputConnection ic = getCurrentInputConnection();
         if (ic == null) return;
@@ -58,7 +65,7 @@ public class KbService extends InputMethodService implements KbView.Listener {
         InputConnection ic = getCurrentInputConnection();
         switch (code) {
             case KbView.DEL:
-                sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL);
+                delete(ic);
                 autoCaps();
                 break;
             case KbView.SPACE:
@@ -76,6 +83,23 @@ public class KbService extends InputMethodService implements KbView.Listener {
             default:
                 break;
         }
+    }
+
+    /**
+     * Удаление символа. Сначала пробуем InputConnection (надёжнее в WebView и полях
+     * с composing text), и только если редактор отказал - обычные key events.
+     */
+    private void delete(InputConnection ic) {
+        if (ic == null) {
+            sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL);
+            return;
+        }
+        CharSequence selected = ic.getSelectedText(0);
+        if (selected != null && selected.length() > 0) {
+            ic.commitText("", 1); // выделение заменяем пустой строкой
+            return;
+        }
+        if (!ic.deleteSurroundingText(1, 0)) sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL);
     }
 
     private void enter(InputConnection ic) {

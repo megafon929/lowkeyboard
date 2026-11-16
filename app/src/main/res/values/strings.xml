@@ -3,12 +3,18 @@
     <string name="app_name">LowKeyboard</string>
     <string name="enable">1. Enable the keyboard</string>
     <string name="choose">2. Select the keyboard</string>
-    <string name="langs">Languages in the switch cycle:</string>
+    <string name="cat_keyboard">Keyboard</string>
+    <string name="cat_appearance">Appearance</string>
+    <string name="cat_input">Input</string>
+    <string name="cat_other">Other</string>
+    <string name="langs">Languages in the switch cycle</string>
     <string name="digits_sym">Number row only in the symbols layout</string>
     <string name="key_height">Key height: %1$d dp</string>
+    <string name="sound">Key click sound</string>
+    <string name="sound_summary">System keyboard sound</string>
     <string name="reset_langs">Default: English + system language</string>
     <string name="subtype">English</string>
-    <string name="theme">Theme:</string>
+    <string name="enter_send">Send</string>
     <string name="hide_icon">Hide the app icon from the home screen</string>
     <string name="hide_icon_hint">Settings stay available in the system: Settings → Language &amp; input → LowKeyboard.</string>
 </resources>

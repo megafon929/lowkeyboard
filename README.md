@@ -26,7 +26,8 @@ everything you type stays on the device.
 - **Number row** – always visible by default. Optionally it can be shown only on the symbols layout
   (digits then appear as small hints on the top letter row; long-press to type a digit).
   In that mode the keyboard height never changes and symbols are split into two pages (`=\<` / `?123`).
-- **Themes**: Holo, Material Light, Material Dark, MIUI 5, Flyme.
+- **Themes**: Holo, Material Light, Material Dark, MIUI 5, Flyme, TouchWiz.
+- **Key click sound** – the system keyboard sound, can be switched off.
 - **Key height** slider (30–60 dp).
 - **Enter key** adapts to the editor action: magnifier (search), arrow (next/go), check mark (done).
 - Shift with caps lock (double tap) and automatic capitalisation at the start of a sentence.
@@ -107,15 +108,40 @@ Add an entry to `Theme.ALL` and a name to `Theme.NAMES` in `Theme.java`.
 ## Settings storage
 
 Preferences are kept in the `kb` SharedPreferences file: `mask2` (enabled languages), `lang2`
-(current language), `theme`, `keyH` (key height, dp), `digSym` (number row on symbols only).
+(current language), `theme`, `keyH` (key height, dp), `digSym` (number row on symbols only),
+`sound` (key click sound).
 
 ## Credits and AI assistance
 
-This project was created with the help of **Claude**, an AI assistant by Anthropic.
+This project was created with the help of two AI assistants: **Claude** by Anthropic (the code itself)
+and the **SourceCraft** assistant (review and the 1.1 changes).
 
 - **Claude:** wrote the source code, resources, build configuration, helper scripts and this documentation
   from the author's requirements, and revised them step by step according to the author's feedback.
+- **SourceCraft assistant:** reviewed the finished code, reported the bugs and implemented the 1.1 changes:
+  mirrored right-to-left layouts, reliable Delete, auto-capitalisation when the cursor moves, the native
+  `PreferenceActivity` settings screen, the key click sound and the TouchWiz theme.
 - **The author:** wrote the specification, supplied the icon artwork (SVG), built the app, tested it on
   a real Android 4.0.4 device and decided what to change.
+
+### Version 1.1: what was fixed and added with the SourceCraft assistant
+
+- **Right-to-left layouts** (Arabic, Hebrew, Persian) are mirrored: the first character of a row sits at
+  the right edge, as on a system keyboard (`Layouts.RTL`, `KbView.addRow`).
+- **Delete** goes through `InputConnection` (`deleteSurroundingText`, a selection is replaced) with a
+  fallback to key events — reliable in WebView and in fields with composing text.
+- **Automatic capitalisation** is recalculated when the cursor moves (`onUpdateSelection`).
+- **Key height** read from the preferences is clamped to 30–60 dp, so a stale or corrupted value no
+  longer produces an unusable keyboard.
+- **The current language** is written back to the preferences when the stored one is disabled.
+- **Pending timers** (long press, delete repeat) are cancelled when the view is detached, so a phantom
+  delete can no longer continue after the keyboard is hidden.
+- **The Send label** is localised (`enter_send`) and shrinks to fit the key.
+- **The long-press panel** never becomes wider than the screen and its glyphs shrink in narrow cells.
+- **Settings screen** rebuilt on the native `PreferenceActivity` with categories; themes and languages
+  are checkboxes (exactly one theme, at least one language).
+- **Key click sound** setting: the system keyboard sound is used, no audio files in the APK.
+- **TouchWiz theme**: background `#747678`, letter keys `#E1E1E1`, black text, space and system keys
+  `#A8A7AA` (the Enter key is drawn in the same colour).
 
 The code was not compiled or run by the assistant: builds and device testing were done by the author.
